@@ -9,4 +9,14 @@
 
 #Action: Simulate the database and find results.
 
-#Result: FPW.py/FPW.xlsx
+#Result: 
+
+#**FindActualPW.py**
+
+#**FindProtocolPW.py**
+
+#**FindActualPW.txt** (VBA)
+
+#**FindProtocolPW.txt** (VBA)
+
+#**FindPW.xlsm**
