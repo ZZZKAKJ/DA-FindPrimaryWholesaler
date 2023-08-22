@@ -1,0 +1,123 @@
+Sub FindPW()
+
+    ' Declare variables
+    Dim needfindTotalRow As Long
+    Dim protocolTotalRow As Long
+    Dim resultforprotocolTotalRow As Long
+    Dim tempdataTotalRow As Long
+    Dim rowNum As Long
+    Dim cnn As Object, rst As Object
+    Dim sqlStr As String, cnnStr As String
+    
+    ' Calculate total rows in various sheets
+    needfindTotalRow = Sheets("needfind").Range("A999999").End(xlUp).Row
+    protocolTotalRow = Sheets("protocol").Range("A999999").End(xlUp).Row
+    
+    ' Add "Order" column to "needfind" sheet
+    Sheets("needfind").Range("E1").Value = "Order"
+    For tempIdx = 2 To needfindTotalRow
+        Sheets("needfind").Cells(tempIdx, 5).Value = tempIdx
+    Next
+
+    ' Set up connection to Excel
+    cnnStr = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" & ThisWorkbook.FullName & ";Extended Properties=""Excel 12.0 Macro;HDR=Yes"""
+    Set cnn = CreateObject("ADODB.Connection")
+    cnn.Open cnnStr
+
+    ' SQL query and data retrieval for resultforprotocol sheet
+    sqlStr = "SELECT nf.Product,nf.DistributorCode,nf.DistributorName,nf.DistributorLevel,p.UpperDistributorCode,p.DistributorLevel,null,null,nf.Order " & _
+    "FROM [needfind$]nf LEFT JOIN [protocol$]p ON nf.Product = p.Product AND nf.DistributorCode = p.DistributorCode ORDER BY nf.order"
+    Set rst = cnn.Execute(sqlStr)
+
+    ' Clear resultforprotocol sheet and set headers
+    Sheets("resultforprotocol").Range("A1:Z999999").ClearContents
+    Sheets("resultforprotocol").Range("A1").Value = "Product"
+    Sheets("resultforprotocol").Range("B1").Value = "DistributorCode"
+    Sheets("resultforprotocol").Range("C1").Value = "DistributorName"
+    Sheets("resultforprotocol").Range("D1").Value = "DistributorLevel"
+    Sheets("resultforprotocol").Range("E1").Value = "UpperDistributorCode"
+    Sheets("resultforprotocol").Range("F1").Value = "ProductProtocolDistributorLevel"
+    Sheets("resultforprotocol").Range("G1").Value = "PrimaryDistributorCode"
+    Sheets("resultforprotocol").Range("H1").Value = "PrimaryWholesalerName"
+    Sheets("resultforprotocol").Range("I1").Value = "Order"
+
+     ' Copy data from recordset to resultforprotocol sheet
+    Sheets("resultforprotocol").Range("A2").CopyFromRecordset rst
+    Set rst = Nothing
+
+    ' Calculate total rows in resultforprotocol sheet
+    resultforprotocolTotalRow = Sheets("resultforprotocol").Range("A999999").End(xlUp).Row
+
+    ' Loop to update data in resultforprotocol sheet based on conditions
+    For i = 2 To resultforprotocolTotalRow
+        If Sheets("resultforprotocol").Cells(i, 5) = "Roche" Or Sheets("resultforprotocol").Cells(i, 5) = "D00010893" Then
+            Sheets("resultforprotocol").Cells(i, 7).Value = Sheets("resultforprotocol").Cells(i, 2)
+            Sheets("resultforprotocol").Cells(i, 8).Value = Sheets("resultforprotocol").Cells(i, 3)
+        ElseIf Sheets("resultforprotocol").Cells(i, 5) = "" Then
+            Sheets("resultforprotocol").Cells(i, 7).Value = "Cannot Find"
+        End If
+    Next
+
+
+    ' SQL query and data retrieval for tempdata sheet
+    sqlStr = "SELECT Product,DistributorCode,UpperDistributorCode,PrimaryDistributorCode,null,Order " & _
+    "FROM [resultforprotocol$] " & _
+    "WHERE PrimaryDistributorCode is null"
+    Set rst = cnn.Execute(sqlStr)
+
+    Sheets("tempdata").Range("A1:Z999999").ClearContents
+    Sheets("tempdata").Range("A1") = "Product"
+    Sheets("tempdata").Range("B1") = "DistributorCode"
+    Sheets("tempdata").Range("C1") = "UpperDistributorCode"
+    Sheets("tempdata").Range("D1") = "PrimaryDistributorCode"
+    Sheets("tempdata").Range("E1") = "Factory"
+    Sheets("tempdata").Range("F1") = "Order"
+    Sheets("tempdata").Range("A2").CopyFromRecordset rst
+
+
+    If Sheets("protocol").Range("A1").Value <> "ProductDistributorCode" Then
+        Sheets("protocol").Columns(1).Insert
+    End If
+    For i = 1 To protocolTotalRow
+        Sheets("protocol").Cells(i, 1) = Sheets("protocol").Cells(i, 2) + Sheets("protocol").Cells(i, 3)
+    Next
+
+    tempdataTotalRow = Sheets("tempdata").Range("A1").End(xlDown).Row
+
+
+    'Cannot Find in loop
+    For i = 2 To tempdataTotalRow
+
+        Sheets("tempdata").Cells(i, 4).Value = Application.VLookup(Sheets("tempdata").Cells(i, 1) & Sheets("tempdata").Cells(i, 3), ThisWorkbook.Sheets("protocol").Range("A:F"), 3, False)
+        Sheets("tempdata").Cells(i, 5).Value = Application.VLookup(Sheets("tempdata").Cells(i, 1) & Sheets("tempdata").Cells(i, 3), ThisWorkbook.Sheets("protocol").Range("A:F"), 6, False)
+
+        If Sheets("tempdata").Cells(i, 4).Text = "#N/A" Then
+            Sheets("tempdata").Cells(i, 4).Value = "Cannot find in loop"
+            Sheets("tempdata").Cells(i, 5).Value = "Cannot find in loop"
+        End If
+
+        While Sheets("tempdata").Cells(i, 5) <> "D00010893" And Sheets("tempdata").Cells(i, 5) <> "Roche" And Sheets("tempdata").Cells(i, 5) <> "Cannot find in loop"
+            Sheets("tempdata").Cells(i, 4).Value = Sheets("tempdata").Cells(i, 5)
+            Sheets("tempdata").Cells(i, 5).Value = Application.VLookup(Sheets("tempdata").Cells(i, 1) & Sheets("tempdata").Cells(i, 4), ThisWorkbook.Sheets("protocol").Range("A:F"), 6, False)
+        Wend
+
+    Next
+
+    For i = 2 To tempdataTotalRow
+        rowNum = ThisWorkbook.Sheets("tempdata").Cells(i, 6)
+        ThisWorkbook.Sheets("resultforprotocol").Cells(rowNum, 7).Value = ThisWorkbook.Sheets("tempdata").Cells(i, 4)
+    Next
+
+    For i = 2 To resultforprotocolTotalRow
+        If ThisWorkbook.Sheets("resultforprotocol").Cells(i, 8) = "" Then
+            ThisWorkbook.Sheets("resultforprotocol").Cells(i, 8).Value = Application.VLookup(Sheets("resultforprotocol").Cells(i, 7), ThisWorkbook.Sheets("protocol").Range("F:G"), 2, False)
+        End If
+    Next
+
+
+    ' Delete unnecessary columns
+    ThisWorkbook.Sheets("resultforprotocol").Columns(5).Delete
+    ThisWorkbook.Sheets("resultforprotocol").Columns(8).Delete
+
+
+End Sub
