@@ -1,0 +1,148 @@
+Sub FindActualPW()
+
+    Dim arr
+    Dim arr1
+    Dim arr2
+    Dim arr3
+    Dim arr4
+    
+    Dim rst1 As Object
+    Dim rst2 As Object
+    Dim rst3 As Object
+    Dim rst4 As Object
+    
+    Dim sqlStr1 As String
+    Dim sqlStr2 As String
+    Dim sqlStr3 As String
+    Dim sqlStr4 As String
+
+
+    Dim cnn As Object
+    Dim cnnStr As String
+    
+
+    arr = Sheets("needfind").Range("A1:D" & Sheets("needfind").Range("A1").End(xlDown).Row)
+    Sheets("resultforfact").Range("A1:D" & Sheets("needfind").Range("A1").End(xlDown).Row) = arr
+    
+    
+    cnnStr = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" & ThisWorkbook.FullName & ";Extended Properties=""Excel 12.0 Macro;HDR=Yes"""
+    Set cnn = CreateObject("ADODB.Connection")
+    cnn.Open cnnStr
+    
+    Sheets("fact").Range("AD1").Value = "BuyerCode"
+
+
+    sqlStr1 = "SELECT ft.Product,ft.SellerCode,ft.BuyerCode FROM [fact$]ft WHERE SellerCode = 'D00010893' or SellerCode = 'Roche'"
+    Set rst1 = cnn.Execute(sqlStr1)
+    Sheets("s1").Range("A1:Z999999").ClearContents
+    Sheets("s1").Range("A1").Value = "Product"
+    Sheets("s1").Range("B1").Value = "FactoryCode"
+    Sheets("s1").Range("C1").Value = "PWCode"
+    Sheets("s1").Range("A2").CopyFromRecordset rst1
+    Set rst1 = Nothing
+
+
+    arr1 = Sheets("s1").Range("A1").CurrentRegion
+    For i = 2 To Sheets("resultforfact").Range("A1").End(xlDown).Row
+        For u = 2 To Sheets("s1").Range("A1").End(xlDown).Row
+            If arr(i, 1) + arr(i, 3) = arr1(u, 1) + arr1(u, 3) Then
+                Sheets("resultforfact").Cells(i, 5).Value = arr(i, 3)
+            End If
+        Next
+    Next
+
+
+
+
+    sqlStr2 = "SELECT td.Product,td.FactoryCode,td.PWCode,ft.BuyerCode " & _
+    "FROM [s1$]td LEFT JOIN [fact$]ft ON td.PWCode =ft.SellerCode AND td.Product=ft.Product " & _
+    "GROUP BY td.Product,td.FactoryCode,td.PWCode,ft.BuyerCode"
+    Set rst2 = cnn.Execute(sqlStr2)
+    Sheets("s2").Range("A1:Z999999").ClearContents
+    Sheets("s2").Range("A1").Value = "Product"
+    Sheets("s2").Range("B1").Value = "FactoryCode"
+    Sheets("s2").Range("C1").Value = "PWCode"
+    Sheets("s2").Range("D1").Value = "SWCode"
+    Sheets("s2").Range("A2").CopyFromRecordset rst2
+    Set rst2 = Nothing
+
+
+
+
+
+    arr2 = Sheets("s2").Range("A1").CurrentRegion
+    For i = 2 To Sheets("resultforfact").Range("A1").End(xlDown).Row
+        For u = 2 To Sheets("s2").Range("A1").End(xlDown).Row
+            If arr(i, 1) + arr(i, 3) = arr2(u, 1) + arr2(u, 4) Then
+                Sheets("resultforfact").Cells(i, 6).Value = arr2(u, 3)
+            End If
+        Next
+    Next
+
+
+
+
+    sqlStr3 = "SELECT td.Product,td.FactoryCode,td.PWCode,td.SWCode,ft.BuyerCode " & _
+    "FROM [s2$]td LEFT JOIN [fact$]ft ON ft.SellerCode=td.SWCode AND td.Product=ft.Product " & _
+    "GROUP BY td.Product,td.FactoryCode,td.PWCode,td.SWCode,ft.BuyerCode"
+    Set rst3 = cnn.Execute(sqlStr3)
+    Sheets("s3").Range("A1:Z999999").ClearContents
+    Sheets("s3").Range("A1").Value = "Product"
+    Sheets("s3").Range("B1").Value = "FactoryCode"
+    Sheets("s3").Range("C1").Value = "PWCode"
+    Sheets("s3").Range("D1").Value = "SWCode"
+    Sheets("s3").Range("E1").Value = "TWCode"
+    Sheets("s3").Range("A2").CopyFromRecordset rst3
+    Set rst3 = Nothing
+
+
+
+    arr3 = Sheets("s3").Range("A1").CurrentRegion
+    For i = 2 To Sheets("resultforfact").Range("A1").End(xlDown).Row
+        For u = 2 To Sheets("s3").Range("A1").End(xlDown).Row
+            If arr(i, 1) + arr(i, 3) = arr3(u, 1) + arr3(u, 5) Then
+                Sheets("resultforfact").Cells(i, 7).Value = arr3(u, 3)
+            End If
+        Next
+    Next
+
+
+
+   
+
+    sqlStr4 = "SELECT td.Product,td.FactoryCode,td.PWCode,td.SWCode,td.TWCode,ft.BuyerCode " & _
+    "FROM [s3$]td LEFT JOIN [fact$]ft ON ft.SellerCode=td.TWCode AND td.Product=ft.Product " & _
+    "GROUP BY td.Product,td.FactoryCode,td.PWCode,td.SWCode,td.TWCode,ft.BuyerCode"
+    Set rst4 = cnn.Execute(sqlStr4)
+    Sheets("s4").Range("A1:Z999999").ClearContents
+    Sheets("s4").Range("A1").Value = "Product"
+    Sheets("s4").Range("B1").Value = "FactoryCode"
+    Sheets("s4").Range("C1").Value = "PWCode"
+    Sheets("s4").Range("D1").Value = "SWCode"
+    Sheets("s4").Range("E1").Value = "TWCode"
+    Sheets("s4").Range("F1").Value = "QWCode"
+    Sheets("s4").Range("A2").CopyFromRecordset rst4
+    Set rst4 = Nothing
+
+
+
+    arr4 = Sheets("s4").Range("A1").CurrentRegion
+    For i = 2 To Sheets("resultforfact").Range("A1").End(xlDown).Row
+        For u = 2 To Sheets("s4").Range("A1").End(xlDown).Row
+            If arr(i, 1) + arr(i, 3) = arr4(u, 1) + arr4(u, 6) Then
+                Sheets("resultforfact").Cells(i, 8).Value = arr4(u, 3)
+            End If
+        Next
+    Next
+
+
+
+
+
+
+
+
+End Sub
+
+
+
